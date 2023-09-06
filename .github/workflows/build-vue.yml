@@ -27,7 +27,7 @@ jobs:
       with:
         node-version: 16
     - id: Build-Deploy-Vue
-      uses: dreusel/vue-deploy-github-pages@latest
+      uses: dreusel/VuePagesAction@latest
       with:
         username: 'dreusel'
         reponame: 'xtds-dashboard'
