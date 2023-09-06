@@ -18,6 +18,8 @@
 								:search="''"
 								:loading="loading"
 								item-key="name"
+								fixed-header
+								height="100vh"
 								hide-default-footer
 								disable-pagination
 							>
@@ -27,14 +29,20 @@
 								<template v-slot:[`item.selectedDancersPerc`]="{ item }">
 									<span>{{ formatPercentage1(item.selectedDancersPerc) }}</span>
 								</template>
+								<template v-slot:[`item.shiftsPerc`]="{ item }">
+									<span>{{ formatPercentage2(item.shiftsPerc) }}</span>
+								</template>
+								<template v-slot:[`item.shiftsPerDancer`]="{ item }">
+									<span>{{ item.shiftsPerDancer.toFixed(1) }}</span>
+								</template>
 								<template v-slot:[`item.shiftTimeClaimed`]="{ item }">
 									<span>{{ formatHours(item.shiftTimeClaimed) }}</span>
 								</template>
 								<template v-slot:[`item.shiftTimeOfTotalPerc`]="{ item }">
 									<span>{{ formatPercentage2(item.shiftTimeOfTotalPerc) }}</span>
 								</template>
-								<template v-slot:[`item.shiftTimePerSelectedDancer`]="{ item }">
-									<span>{{ formatHours(item.shiftTimePerSelectedDancer) }}</span>
+								<template v-slot:[`item.shiftTimePerDancer`]="{ item }">
+									<span>{{ formatHours(item.shiftTimePerDancer) }}</span>
 								</template>
 							</v-data-table>
 						</v-card-text>
@@ -65,9 +73,12 @@ export default {
 				{ text: 'Selected', value: 'dancersSelected' },
 				{ text: 'Selected (%)', value: 'dancersSelectedInTeamPerc' },
 				{ text: '% of total', value: 'selectedDancersPerc' },
-				{ text: 'Shift Time Claimed', value: 'shiftTimeClaimed' },
+				{ text: 'Shifts claimed', value: 'shiftsClaimed' },
+				{ text: '% of total shifts', value: 'shiftsPerc' },
+				{ text: 'Shifts per dancer', value: 'shiftsPerDancer' },
+				{ text: 'Shift Time claimed', value: 'shiftTimeClaimed' },
 				{ text: '% Shift Time of total', value: 'shiftTimeOfTotalPerc' },
-				{ text: 'Shift Time per dancer', value: 'shiftTimePerSelectedDancer' },
+				{ text: 'Shift Time per dancer', value: 'shiftTimePerDancer' },
 			],
 		};
 	},
@@ -83,6 +94,7 @@ export default {
 				dancersRegistered: 0,
 				dancersSelected: 0,
 				shiftTimeClaimed: 0,
+				shiftsClaimed: 0,
 			}));
 
 
@@ -90,6 +102,7 @@ export default {
 			const totalDancersSelected = this.dancers.filter(d => d.status_info.status === 2).length;
 
 			let totalShiftsTime = 0;
+			let totalShifts = 0;
 			// let totalShiftTimeClaimed = 0;
 
 			const teamsById = Object.fromEntries(enrichedTeams.map(d => [d.id, d]));
@@ -104,10 +117,12 @@ export default {
 
 			this.shifts.forEach(shift => {
 				totalShiftsTime += (shift.duration * shift.shift_slots.length);
+				totalShifts += shift.shift_slots.length;
 				shift.shift_slots.forEach(slot => {
 					if (slot.team) {
 						console.log(`team ${slot.team.id} has shift ${shift.id} of duration ${shift.duration}`);
 						teamsById[slot.team.id].shiftTimeClaimed += shift.duration;
+						teamsById[slot.team.id].shiftsClaimed ++;
 						// totalShiftTimeClaimed += shift.duration;
 					}
 				});
@@ -118,7 +133,9 @@ export default {
 				team.totalDancersPerc = (team.dancers.length / totalDancers);
 				team.selectedDancersPerc = (team.dancersSelected / totalDancersSelected);
 				team.shiftTimeOfTotalPerc = team.shiftTimeClaimed / totalShiftsTime;
-				team.shiftTimePerSelectedDancer = team.dancersSelected ? team.shiftTimeClaimed / team.dancersSelected : 0;
+				team.shiftTimePerDancer = team.dancersSelected ? team.shiftTimeClaimed / team.dancersSelected : 0;
+				team.shiftsPerc = team.shiftsClaimed / totalShifts;
+				team.shiftsPerDancer = team.dancersSelected ? team.shiftsClaimed / team.dancersSelected : 0;
 			});
 
 			return enrichedTeams;
